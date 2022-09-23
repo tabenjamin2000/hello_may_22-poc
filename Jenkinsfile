@@ -3,20 +3,12 @@ pipeline {
     tools{
         maven 'M2_HOME'
     }
-    environment {
-    registry = '730137084652.dkr.ecr.us-east-1.amazonaws.com/pipeline-test'
-    registryCredential = 'ECR-credentials'
-    dockerimage = ''
-  }
     stages {
-        stage('Checkout'){
-            steps{
-                git branch: 'main', url: 'https://github.com/tabenjamin2000/hello_may_22.git'
-            }
-        }
-        stage('Code Build') {
+        stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean'
+                sh 'mvn install'
+                sh 'mvn package'
             }
         }
         stage('Test') {
@@ -24,21 +16,16 @@ pipeline {
                 sh 'mvn test'
             }
         }
-        stage('Build Image') {
+        stage('Deploy') {
             steps {
-                script{
-                    dockerImage = docker.build registry + ":$BUILD_NUMBER"
-                } 
+                echo 'Deploy Step'
+                sleep 10
             }
         }
-        stage('Deploy image') {
-            steps{
-                script{ 
-                    docker.withRegistry("https://"+registry,"ecr:us-east-1:"+registryCredential) {
-                        dockerImage.push()
-                    }
-                }
+        stage('Docker') {
+            steps {
+                echo 'Image step'
             }
-        }  
+        }
     }
 }
