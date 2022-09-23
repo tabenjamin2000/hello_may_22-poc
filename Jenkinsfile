@@ -1,31 +1,11 @@
-pipeline {
-    agent any
-    tools{
-        maven 'M2_HOME'
+node {
+  stage('SCM') {
+    checkout scm
+  }
+  stage('SonarQube Analysis') {
+    def mvn = tool 'Default Maven';
+    withSonarQubeEnv() {
+      sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=project-test"
     }
-    stages {
-        stage('Build') {
-            steps {
-                sh 'mvn clean'
-                sh 'mvn install'
-                sh 'mvn package'
-            }
-        }
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploy Step'
-                sleep 10
-            }
-        }
-        stage('Docker') {
-            steps {
-                echo 'Image step'
-            }
-        }
-    }
+  }
 }
