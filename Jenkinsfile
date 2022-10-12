@@ -1,11 +1,44 @@
-node {
-  stage('SCM') {
-    checkout scm
-  }
-  stage('SonarQube Analysis') {
-    def mvn = tool 'M2_HOME';
-    withSonarQubeEnv() {
-      sh "${mvn}/opt/maven clean verify sonar:sonar -Dsonar.projectKey=project-test"
+pipeline {
+    agent any
+    tools{
+        maven 'M2_HOME'
     }
+    environment {
+    registry = '730137084652.dkr.ecr.us-east-1.amazonaws.com/poc_repo'
+    registryCredential = 'jenkins-ecr'
+    dockerimage = ''
   }
+    stages {
+        stage('Checkout'){
+            steps{
+                git branch: 'main', url: 'https://github.com/tabenjamin2000/hello_may_22.git'
+            }
+        }
+        stage('Code Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+        stage('Build Image') {
+            steps {
+                script{
+                    dockerImage = docker.build registry + ":$BUILD_NUMBER"
+                } 
+            }
+        }
+        stage('Deploy image') {
+            steps{
+                script{ 
+                    docker.withRegistry("https://"+registry,"ecr:us-east-1:"+registryCredential) {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }  
+    }
 }
